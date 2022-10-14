@@ -1,6 +1,7 @@
 from .check_raster_files import *
 from .vector_geometry import clipRasterWithMask
 from .logger import *
+from .paths import openFile
 from osgeo import ogr
 import numpy as np
 import pandas as pd
@@ -458,13 +459,18 @@ def legendFromXls(xlspath, sheet=0, key_column='Значение',
 
 class Legend(dict):
 
-    def updateFromXls(self, xlspath, sheet=0, key_column='Значение',
+    def updateFromXls(self, xlspath=None, sheet=0, key_column='Значение',
                       legend_column='Описание'):
+
+        if xlspath is None:
+            xlspath = self.xlspath
+        else:
+            self.xlspath = xlspath
+
         self.update(legendFromXls(xlspath, sheet=sheet, key_column=key_column,
                                   legend_column=legend_column))
-        self.xlspath = xlspath
         self.sheet = sheet
         self.legend_column = legend_column
 
     def openXls(self):
-        os.system(self.xlspath)
+        openFile(self.xlspath)

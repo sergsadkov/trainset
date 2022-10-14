@@ -25,7 +25,7 @@
 from PyQt5.QtCore import QThread, QObject, pyqtSignal
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QFileDialog, QTabWidget
+from qgis.PyQt.QtWidgets import QAction, QFileDialog, QTabWidget, QMessageBox
 from qgis.core import QgsProject, Qgis
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -36,6 +36,7 @@ import os.path
 
 from .razmetka_classes import *
 from .check_raster_files import *
+from .paths import ClearFolder
 
 init_logger(filename=FullPath(os.path.dirname(__file__), 'razmetka.log'))
 
@@ -244,36 +245,18 @@ class TerraTech:
     def GetReplaceDict(self, string):
         dict_replaces = {}
         if string:
-            if re.search(',', string):
-                list_replaces = re.split(",", string)
-                for el in list_replaces:
-                    if re.search(':', el):
-                        key, value = int(re.split(":", el)[0]), int(re.split(":", el)[1])
-                        if isinstance(key, int) and isinstance(value, int):
-                            dict_replaces[key] = value
-                        else:
-                            pass
+            list_replaces = re.split(",", string)
+            for el in list_replaces:
+                el = el.strip()
+                if re.search(':', el):
+                    key, value = int(re.split(":", el)[0]), int(re.split(":", el)[1])
+                    if isinstance(key, int) and isinstance(value, int):
+                        dict_replaces[key] = value
                     else:
-                        self.iface.messageBar().pushMessage("Error",
-                                                            "Необходимо использовать разделитель ':' между исходным и новым значением замены",
-                                                            level=Qgis.Critical, duration=10)
-            else:
-                try:
-                    if re.search(':', string):
-                        key, value = int(re.split(":", string)[0]), int(re.split(":", string)[1])
-                        if isinstance(key, int) and isinstance(value, int):
-                            dict_replaces[key] = value
-                        else:
-                            pass
-                    else:
-                        self.iface.messageBar().pushMessage("Error",
-                                                            "Необходимо использовать разделитель ':' между исходным и новым значением замены",
-                                                            level=Qgis.Critical, duration=10)
-                except:
-                    self.iface.messageBar().pushMessage("Error",
-                                                        "Некорректная запись замен", level=Qgis.Critical, duration=10)
-        else:
-            pass
+                        pass
+                else:
+                    pass
+                    #self.iface.messageBar().pushMessage("Error", "Необходимо использовать разделитель ':' между исходным и новым значением замены", level=Qgis.Critical, duration=10)
 
         return dict_replaces
 
@@ -348,7 +331,7 @@ class TerraTech:
             'set_satid': self.dockwidget.lineEditPar__set_satid.text().strip().rstrip('\\'),
             'set_objid': self.dockwidget.lineEditPar__set_objid.text().strip().rstrip('\\'),
             'set_appendix': self.dockwidget.lineEditPar__set_appendix.text().strip().rstrip('\\'),
-            'replace': self.GetReplaceDict(self.dockwidget.lineEditPar__replace.text().strip().rstrip('\\')),
+            'replace': self.GetReplaceDict(self.dockwidget.textEditPar__replace.toPlainText().strip().rstrip('\\')),
             'empty': self.GetCheckBoxValue(self.dockwidget.checkBox__empty, True, False),
             'crop_mask': self.GetCheckBoxValue(self.dockwidget.checkBox__crop_mask, True, False),
             'crop_data': self.GetCheckBoxValue(self.dockwidget.checkBox__crop_data, True, False),
@@ -467,19 +450,41 @@ class TerraTech:
                 data = self.ParametersToString(parameters, excel_path = 'params.xls', temp_dir = os.environ['TMP'])
                 self.dockwidget.textBrowserSource.setText(data)
 
+    def SetReplaceValues(self):
+        try:
+            replace_dict = self.GetReplaceDict(self.dockwidget.textEditPar__replace.toPlainText().strip().rstrip('\\'))
+            for id in self.set:
+                self.set[id].par['replace'] = replace_dict
+        except:
+            pass
+
     def ResultFolder(self):
         result_folder = QFileDialog.getExistingDirectory(
             self.dockwidget, "Выберите директорию папки с разметкой", "")
         self.dockwidget.lineEditResultFolder.setText(result_folder)
         self.set.CheckTargetFolder(target_folder=self.dockwidget.lineEditResultFolder.text())
 
+    def OpenLegend(self):
+        self.set.legend.openXls()
+
+    def ClearResultFolder(self):
+        target_folder = self.set.tfolder
+        if target_folder is not None:
+            if os.path.exists(target_folder):
+                confirm_delete = checkDialog()
+                # raise Exception(confirm_delete)
+                if confirm_delete == 1024:
+                    ClearFolder(target_folder)
+
     def ResultEstimate(self):
+        self.set.legend.updateFromXls()
         result_folder = self.dockwidget.lineEditResultFolder.text()
         # self.set.analyzeSet(result_folder)
         self.create_thread_analyze()
         # self.dockwidget.textBrowserResult.setText(self.set.__repr__())
 
     def ResultMakeSet(self):
+        self.set.legend.updateFromXls()
         result_folder = self.dockwidget.lineEditResultFolder.text()
         # self.set.MakeSet(result_folder)
         self.create_thread_write()
@@ -543,8 +548,7 @@ class TerraTech:
         if not self.pluginIsActive:
             self.pluginIsActive = True
             self.set = Razmetka()
-            self.set.legend.updateFromXls(FullPath(self.plugin_dir, 'default_legend.xls'),
-                                          sheet = 0, key_column = 'Значение', legend_column = 'Описание')
+            self.set.legend.updateFromXls(FullPath(self.plugin_dir, 'default_legend.xls'))
 
             #print "** STARTING TerraTech"
 
@@ -579,12 +583,19 @@ class TerraTech:
             self.dockwidget.pushButtonSetParameters.clicked.connect(self.SetParameters)
             # self.dockwidget.progressBarSource
 
+            # Buttons on the Result tab
             self.dockwidget.pushButtonResultFolderSet.clicked.connect(self.ResultFolder)
+            self.dockwidget.pushButtonResult__Legend.clicked.connect(self.OpenLegend)
+            self.dockwidget.pushButtonResult__Clear.clicked.connect(self.ClearResultFolder)
             self.dockwidget.pushButtonResultFolderAnalyze.clicked.connect(self.ResultEstimate)
             self.dockwidget.pushButtonResultFolderSave.clicked.connect(self.ResultMakeSet)
             # self.dockwidget.progressBarResult
             # self.dockwidget.pushButtonResultFolderAnalyze.clicked.connect(self.create_thread)
             self.dockwidget.pushButtonCancelResults.clicked.connect(self.kill_thread)
+
+            # Update replace values instantly for all scenes
+            self.dockwidget.textEditPar__replace.textChanged.connect(self.SetReplaceValues)
+
 
 class Worker(QObject):
     progressChanged = pyqtSignal()
@@ -650,3 +661,17 @@ class Worker(QObject):
     def cancel(self):
         self.isCancelled = True
         self.cancelled.emit()
+
+
+def checkDialog():
+   msgBox = QMessageBox()
+   # msgBox.setIcon(QMessageBox.Information)
+   msgBox.setText("Вы действительно хотите очистить папку разметки и удалить все ранее созданные файлы?")
+   msgBox.setWindowTitle("Подтверждите удаление файлов")
+   msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+   # msgBox.buttonClicked.connect(msgButtonClick)
+
+   returnValue = msgBox.exec()
+   #if returnValue == QMessageBox.Ok:
+      # print('OK clicked')
+   return returnValue
