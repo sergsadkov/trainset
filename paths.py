@@ -1,6 +1,8 @@
 import os
 import shutil
 import re
+import subprocess
+import platform
 
 
 def SplitPath(path):
@@ -93,3 +95,22 @@ def CheckPathValidity(path, forbid_none, must_exist, must_not_exist, must_folder
             return f'File not found: {path}'
         elif must_folder_exist and not os.path.exists(os.path.split(path)[0]):
             return f'Folder does not exist: {os.path.split(path)[0]}'
+
+
+def ClearFolder(folder):
+    for corner, folders, names in os.walk(folder):
+        for name in names:
+            DeleteFile(FullPath(corner, name))
+    for corner, folders, names in os.walk(folder, topdown=False):
+        if len(os.listdir(corner)) == 0:
+            if corner != folder:
+                os.rmdir(corner)
+
+
+def openFile(filepath):
+    if platform.system() == 'Darwin':  # macOS
+        subprocess.call(('open', filepath))
+    elif platform.system() == 'Windows':  # Windows
+        os.startfile(filepath)
+    else:  # linux variants
+        subprocess.call(('xdg-open', filepath))
