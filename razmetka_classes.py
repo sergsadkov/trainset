@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import json
 
+
 __default_mask_parameters__ = {
         'empty': False,         # If True and vector field is not found an empty mask is created
         'burn': None,           # Burn mask value if the vector attribute field is not found
@@ -18,6 +19,7 @@ __default_mask_parameters__ = {
         'set_satid': 'images',  # Type of satellite images on the mask
         'set_objid': 'full',    # Type of objects on the mask
         'set_appendix': '',     # Appendix to mask filenames
+        'set_unmarked': None,   # Set value for all unmarked data pixels
         'overwrite': False,
         '__errors__': [],
         'Method': 'average',    # Reprojection method: set to average here
@@ -67,6 +69,20 @@ def ReplaceMaskValues(mpath, replace):
     mbnd.WriteArray(marr)
     mds = None
     return report
+
+
+@StopFromStorage
+def setUnmarkedDataMaskValues(rpath, tpath, set_value):
+    rds = gdal.Open(rpath)
+    band = rds.GetRasterBand(1)
+    mask_band = band.GetMaskBand()
+    mask_arr = mask_band.ReadAsArray().astype(bool)
+    tds = gdal.Open(tpath, 1)
+    tband = tds.GetRasterBand(1)
+    tarr = tband.ReadAsArray()
+    tarr[mask_arr * (tarr == 0)] = set_value
+    tband.WriteArray(tarr)
+    tds = None
 
 
 #@StopFromStorage
@@ -166,6 +182,8 @@ class MaskParameters(RasterParameters):
             clipRasterWithMask(rpath, tpath)
         if self.get('crop_mask'):
             clipRasterWithMask(tpath, rpath)
+        if self.get('set_unmarked') is not None:
+            setUnmarkedDataMaskValues(rpath, tpath, self.get('set_unmarked'))
         # CropRasterDataMask(rpath, tpath, self.get('crop_data'), self.get('crop_mask'))
         return ReplaceMaskValues(tpath, self.get('replace'))
 

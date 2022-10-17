@@ -220,6 +220,7 @@ class TerraTech:
     # set datatype to plugin elements
     def Set_lineEditDatatype(self, elem, elem_label, out_datatype):
         out_param = None
+        elem = elem.strip()
         if elem:
             try:
                 out_param = out_datatype(elem)
@@ -331,11 +332,19 @@ class TerraTech:
             'set_satid': self.dockwidget.lineEditPar__set_satid.text().strip().rstrip('\\'),
             'set_objid': self.dockwidget.lineEditPar__set_objid.text().strip().rstrip('\\'),
             'set_appendix': self.dockwidget.lineEditPar__set_appendix.text().strip().rstrip('\\'),
-            'replace': self.GetReplaceDict(self.dockwidget.textEditPar__replace.toPlainText().strip().rstrip('\\')),
-            'empty': self.GetCheckBoxValue(self.dockwidget.checkBox__empty, True, False),
-            'crop_mask': self.GetCheckBoxValue(self.dockwidget.checkBox__crop_mask, True, False),
-            'crop_data': self.GetCheckBoxValue(self.dockwidget.checkBox__crop_data, True, False),
-            'overwrite': self.GetCheckBoxValue(self.dockwidget.checkBox__overwrite, True, False),
+            'replace': self.GetReplaceDict(
+                self.dockwidget.textEditPar__replace.toPlainText().strip().rstrip('\\')),
+            'empty': self.GetCheckBoxValue(
+                self.dockwidget.checkBox__empty, True, False),
+            'crop_mask': self.GetCheckBoxValue(
+                self.dockwidget.checkBox__crop_mask, True, False),
+            'crop_data': self.GetCheckBoxValue(
+                self.dockwidget.checkBox__crop_data, True, False),
+            'set_unmarked': self.Set_lineEditDatatype(
+                self.dockwidget.lineEditPar__UnmarkedData.text(),
+                self.dockwidget.label__UnmarkedData, int),
+            'overwrite': self.GetCheckBoxValue(
+                self.dockwidget.checkBox__overwrite, True, False),
             '__errors__': [],
         }
         mask_params = {**selected_param, **params}
@@ -345,13 +354,20 @@ class TerraTech:
     def GetDataParameters(self):
         return {
             'EPSG': self.GetProjectionIndex(),
-            'PixelSize': self.Set_lineEditDatatype(self.dockwidget.lineEditPar__PixelSize.text(), self.dockwidget.label__PixelSize, float),
-            'NoDataValue': self.Set_lineEditDatatype(self.dockwidget.lineEditPar__NoDataValue.text(), self.dockwidget.label__NoDataValue, float),
+            'PixelSize': self.Set_lineEditDatatype(
+                self.dockwidget.lineEditPar__PixelSize.text(),
+                self.dockwidget.label__PixelSize, float),
+            'NoDataValue': self.Set_lineEditDatatype(
+                self.dockwidget.lineEditPar__NoDataValue.text(),
+                self.dockwidget.label__NoDataValue, float),
             'Bands': self.GetBandsList(self.dockwidget.lineEditPar__Bands.text()),
-            'NBITS': self.Set_lineEditDatatype(self.dockwidget.lineEditPar__BitDepth.text(), self.dockwidget.label__BitDepth, int),
+            'NBITS': self.Set_lineEditDatatype(
+                self.dockwidget.lineEditPar__BitDepth.text(),
+                self.dockwidget.label__BitDepth, int),
             'DataType': self.dockwidget.comboBox__DataType.currentIndex(),
             'COMPRESS': self.dockwidget.comboBox__COMPRESS.currentText(),
-            '__preserve_original_pixel_size__': self.GetCheckBoxValue(self.dockwidget.checkBox__preserve_original_pixel_size__, True, False)
+            '__preserve_original_pixel_size__': self.GetCheckBoxValue(
+                self.dockwidget.checkBox__preserve_original_pixel_size__, True, False)
         }
 
     def GetAllParameters(self):
