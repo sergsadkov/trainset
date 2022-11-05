@@ -683,7 +683,7 @@ def checkDialog():
    msgBox = QMessageBox()
    # msgBox.setIcon(QMessageBox.Information)
    msgBox.setText("Вы действительно хотите очистить папку разметки и удалить все ранее созданные файлы?")
-   msgBox.setWindowTitle("Подтверждите удаление файлов")
+   msgBox.setWindowTitle("Подтвердите удаление файлов")
    msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
    # msgBox.buttonClicked.connect(msgButtonClick)
 
