@@ -124,6 +124,18 @@ def SaveJson(json_path, dictionary):
         json.dump(dictionary, write_file, indent=4, ensure_ascii=False)
 
 
+class RazmetkaError(Exception):
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+
+class RazmetkaErrorGridcodeNone(RazmetkaError):
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+
 class MaskParameters(RasterParameters):
 
     def __init__(self, *args, **kwargs):

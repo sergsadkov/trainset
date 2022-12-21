@@ -632,6 +632,8 @@ class Worker(QObject):
         for i, id in enumerate(self.razmetka):
             try:
                 self.razmetka[id].analyzeMask()
+            except RazmetkaErrorGridcodeNone:
+                razmetkaGridcodeNoneMessage(self.razmetka[id].vpath)
             except Exception as e:
                 self.razmetka[id].errors.append(f'Estimate: {e}')
             self.setProgress(int(round(100 * (i+1) / len(self.razmetka))))
@@ -685,6 +687,20 @@ def checkDialog():
    msgBox.setText("Вы действительно хотите очистить папку разметки и удалить все ранее созданные файлы?")
    msgBox.setWindowTitle("Подтвердите удаление файлов")
    msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+   # msgBox.buttonClicked.connect(msgButtonClick)
+
+   returnValue = msgBox.exec()
+   #if returnValue == QMessageBox.Ok:
+      # print('OK clicked')
+   return returnValue
+
+
+def razmetkaGridcodeNoneMessage(path):
+   msgBox = QMessageBox()
+   # msgBox.setIcon(QMessageBox.Information)
+   msgBox.setText(str(path))
+   msgBox.setWindowTitle("Пустые значения маски, файл пропущен")
+   msgBox.setStandardButtons(QMessageBox.Ok)
    # msgBox.buttonClicked.connect(msgButtonClick)
 
    returnValue = msgBox.exec()
